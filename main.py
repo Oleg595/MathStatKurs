@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
+from tolsolvty.src.tolsolvty import tolsolvty
 
 def readSignal(str):
     data = []
@@ -108,6 +109,8 @@ def printData(data, size, color: str):
         y.append(i)
         x.append(data[i])
 
+    plt.xlabel("номер измерения")
+    plt.ylabel("значение масштабированного сигнала")
     plt.plot(y, x, color)
 
 def readSinus(string: str):
@@ -142,186 +145,28 @@ def newScale(data, size):
 
     return result
 
-def averageSinusData(data, size):
-    for i in range (size):
-        data[i] = averageElement(data[i], len(data[i]))
+def getId(val, consts, size):
+    if val < consts[0]:
+        return 0
 
-    for i in range (size):
-        result = {}
-        for j in range (len(data[i])):
-            result[j] = data[i][j]
-        data[i] = result
-
-    return data
-
-def task(a, size_a, b, size):
-    result_A = []
-    result_B = []
+    if val > consts[size - 1]:
+        return size - 2
 
     for i in range(size):
-        result1 = []
-        result2 = []
-        for j in range(size_a):
-            result1.append(a[i][j])
-            result2.append(a[i][j])
-        result_A.append(result1)
-        result_A.append(result2)
-        result_B.append(b[i] + 0.015 * math.fabs(b[i]))
-        result_B.append(b[i] - 0.015 * math.fabs(b[i]))
+        if val > consts[i] and val < consts[i + 1]:
+            return i
 
-    return result_A, result_B
+def getInterpolation(x, y, x_val):
+    return y[0] + (x_val - x[0]) / (x[1] - x[0]) * (y[1] - y[0])
 
-def step(data, size):
-    count = 0
+def interpolation(data, dc, constants, size, num_const):
+    result = np.zeros(size)
 
-    for i in range(size - 1):
-        if data[i] < 0 and data[i + 1] > 0:
-            count += 1
+    for i in range(size):
+        id = getId(data[i], constants[:, i], num_const)
+        result[i] = getInterpolation([constants[id, i], constants[id + 1, i]], [dc[id], dc[id + 1]], data[i])
 
-    return size / count
-
-def posNums(a, b, size, start1, start2):
-    aMax, aMin = (b[0] - start1 * a[0][1]) / (a[0][0]), (start2 * a[size - 1][1] - b[size - 1]) / (size / 2 + 3 - a[size - 1][0])
-
-    for i in range(2, size):
-        if i % 2 == 0:
-            if (b[i] - start1 * a[i][1]) / (a[i][0]) > aMax:
-                aMax = (b[i] - start1 * a[i][1]) / (a[i][0])
-
-        else:
-            if (-b[size - i] + start2 * a[size - i][1]) / (size / 2 + 3 - a[size - i][0]) > aMin:
-                aMin = (-b[size - i] + start2 * a[size - i][1]) / (size / 2 + 2 - a[size - i][0])
-
-    return aMax, aMin, start1, start2 - aMin * (size / 2 + 3)
-
-def negNums(a, b, size, start1, start2):
-    aMin = (start2 * a[size - 1][1] - b[size - 1]) / (size / 2 + 3 - a[size - 1][0])
-    aMax = (b[0] - start1 * a[0][1]) / (a[0][0])
-
-    for i in range(2, size):
-        if i % 2 == 0:
-            if (b[i] - start1 * a[i][1]) / (a[i][0]) < aMax:
-                aMax = (b[i] - start1 * a[i][1]) / (a[i][0])
-
-        else:
-            if (start2 * a[size - i][1] - b[size - i]) / (size / 2 + 3 - a[size - i][0]) < aMin:
-                aMin = (start2 * a[size - i][1] - b[size - i]) / (size / 2 + 3 - a[size - i][0])
-
-    return aMax, aMin, start1, start2 - aMin * (size / 2 + 3)
-
-def printLines(start, size, a, b, color: str):
-    x = []
-    y = []
-
-    for i in range(-5, size + 5):
-        x.append(start + i)
-        y.append(a * i + b)
-
-    plt.plot(x, y, color)
-
-def scale(data, pos_data, neg_data, pos: bool):
-    if pos_data[1] == None or neg_data[1] == None:
-        return data
-
-    if pos:
-        dist = 0
-
-        for i in range(pos_data[0] + 1, neg_data[0] + 100):
-            if data[i] > 0 and data[i - 1] < 0:
-                dist += 1
-
-            if dist != 0:
-                dist += 1
-
-            if data[i] > 0 and data[i + 1] < 0 and dist != 0:
-                break
-
-        if dist == 0:
-            return data
-
-        yMax = pos_data[1][0] * dist / 2
-        yMin = pos_data[1][1] * dist / 2
-        y = (yMax + yMin) / 2
-        c = math.pi / (2 * y)
-        for i in range(pos_data[0], neg_data[0] + 100):
-            data[i] *= c
-            if data[i] > 0 and data[i + 1] < 0:
-                break
-
-        return data
-
-    else:
-        dist = 0
-
-        for i in range(pos_data[0] + 1, neg_data[0] + 100):
-            if data[i] < 0 and data[i - 1] > 0:
-                dist += 1
-
-            if dist != 0:
-                dist += 1
-
-            if data[i] < 0 and data[i + 1] > 0 and dist != 0:
-                break
-
-        if dist == 0:
-            return data
-
-        yMax = pos_data[1][0] * dist / 2
-        yMin = pos_data[1][1] * dist / 2
-        y = (yMax + yMin) / 2
-        c = -math.pi / (2 * y)
-        for i in range(pos_data[0], neg_data[0] + 100):
-            data[i] *= c
-            if data[i] < 0 and data[i + 1] > 0:
-                break
-
-        return data
-
-def partition(data, size):
-    pos = True
-
-    if data[0] > data[1]:
-        pos = False
-
-    count = 0
-    array = {}
-
-    pos_data = {}
-    neg_data = {}
-
-    for i in range(0, size - 1):
-        if pos and data[i] > data[i + 1]:
-            array[count] = data[i]
-            pos_data[0] = i - count
-            pos_data[1] = USLAU(i - count, array, count + 1, pos)
-            if len(neg_data) != 0:
-                scale(data, neg_data, pos_data, not pos)
-                neg_data.clear()
-            array.clear()
-            count = 0
-            pos = False
-        if not pos and data[i] < data[i + 1]:
-            array[count] = data[i]
-            neg_data[0] = i - count
-            neg_data[1] = USLAU(i - count, array, count + 1, pos)
-            if len(pos_data) != 0:
-                scale(data, pos_data, neg_data, not pos)
-                pos_data.clear()
-            array.clear()
-            count = 0
-            pos = True
-
-        if pos and data[i] < data[i + 1]:
-            array[count] = data[i]
-            count += 1
-        if not pos and data[i] > data[i + 1]:
-            array[count] = data[i]
-            count += 1
-
-    printData(data, size, 'b')
-    plt.show()
-
-    printTime(data, size)
+    return result
 
 def printTime(data, size):
     x = np.zeros(size)
@@ -331,6 +176,8 @@ def printTime(data, size):
         y[i] = data[i] / (2 * math.pi)
         x[i] = 1
 
+    plt.ylabel("номер измерения")
+    plt.xlabel('t[i] = (y[i] - y[i - 1]) / (2 * pi * teta)')
     plt.scatter(y, x)
     plt.show()
 
@@ -346,34 +193,116 @@ def printTime(data, size):
         delta[i - 1] = y[i] - y[i - 1]
 
     sns.distplot(delta)
-    plt.xlabel('delta(t[i])')
-    plt.ylabel('count')
+    plt.xlabel('t[i] = (y[i] - y[i - 1]) / (2 * pi * teta)')
+    plt.ylabel('количество точек')
     plt.show()
 
-def USLAU(start, data, size, pos: bool):
-    A = {}
-    b = {}
+def get_asin_amp(bin_val, ids):
+     dy = 0.005
+     di = 1 / 3
+     A2_bot = np.zeros((len(ids[1]), 3))
+     A2_top = np.zeros((len(ids[1]), 3))
+     B2_bot = np.zeros((len(ids[1]), 1))
+     B2_top = np.zeros((len(ids[1]), 1))
 
-    if size < 7:
-        return
+     A1_bot = np.zeros((len(ids[0]), 3))
+     A1_top = np.zeros((len(ids[0]), 3))
+     B1_bot = np.zeros((len(ids[0]), 1))
+     B1_top = np.zeros((len(ids[0]), 1))
 
-    for i in range(3, size - 3):
-        A[i - 3] = [i, 1]
-        b[i - 3] = data[i]
+     count = 0
 
-    A, b = task(A, len(A[0]), b, len(A))
+     for i in range(len(ids[0])):
+         if i != 0 and ids[0][i] - ids[0][i - 1] > 2:
+            count += 1
 
-    if pos:
-        aMax, aMin, bMax, bMin = posNums(A, b, len(A), data[2], data[size - 2])
+         A1_bot[i, 0] = ids[0][i] - di + 1
+         A1_bot[i, 1] = 1
+         A1_bot[i, 2] = count
+         B1_bot[i, 0] = bin_val[ids[0][i]] - dy * abs(bin_val[ids[0][i]])
+
+         A1_top[i, 0] = ids[0][i] + di + 1
+         A1_top[i, 1] = 1
+         A1_top[i, 2] = count
+         B1_top[i, 0] = bin_val[ids[0][i]] + dy * abs(bin_val[ids[0][i]])
+
+     count = 0
+
+     for i in range(len(ids[1])):
+         if i != 0 and ids[1][i] - ids[1][i - 1] > 2:
+            count += 1
+
+         A2_bot[i, 0] = ids[1][i] - di
+         A2_bot[i, 1] = 1
+         A2_bot[i, 2] = count
+         B2_bot[i, 0] = bin_val[ids[1][i]] - dy * abs(bin_val[ids[1][i]])
+
+         A2_top[i, 0] = ids[1][i] + di
+         A2_top[i, 1] = 1
+         A2_top[i, 2] = count
+         B2_top[i, 0] = bin_val[ids[1][i]] + dy * abs(bin_val[ids[1][i]])
+
+     [tolmax, argmax, envs, ccode] = tolsolvty(A1_bot, A1_top, B1_bot, B1_top)
+     a1 = argmax[0]
+     b1 = argmax[1]
+     [tolmax, argmax, envs, ccode] = tolsolvty(A2_bot, A2_top, B2_bot, B2_top)
+     a2 = argmax[0]
+     b2 = argmax[1]
+     y = abs((b1*a2-b2*a1)/(a2-a1))
+
+     return [y, a1, b1, a2, b2]
+
+def partition(data, size):
+
+    elements = [[], []]
+
+    is_pos = True
+
+    if data[0] < data[1]:
+        is_pos = True
+        elements[0].append(0)
     else:
-        aMax, aMin, bMax, bMin = negNums(A, b, len(A), data[2], data[size - 2])
+        is_pos = False
+        elements[1].append(0)
 
-    #printLines(start, size, aMax, bMax, 'g')
-    #printLines(start, size, aMin, bMin, 'r')
+    for i in range(1, size):
+        if data[i] >= data[i - 1]:
+            elements[0].append(i)
+        else:
+            elements[1].append(i)
 
-    return [aMax, aMin, bMax, bMin]
+    return elements
 
-main_lexem = 'Bazenov'
+def printData_Lines(data, a1, b1, a2, b2):
+    x = np.zeros(40)
+    y1 = np.zeros(40)
+    y2 = np.zeros(40)
+
+    time_data = []
+
+    for i in range(40):
+        time_data.append(data[i])
+        x[i] = i
+        y1[i] = a1 * (x[i] + 5) + b1
+        y2[i] = a2 * (x[i] + 4) + b2
+
+    plt.xlabel("номер измерения")
+    plt.ylabel("амплитуда сигнала")
+    plt.plot(x[: 40], time_data[: 40], 'y')
+    plt.plot(x[: 40], y1, 'g')
+    plt.plot(x[: 40], y2, 'r')
+
+def scale(data, size, ampl):
+    result = []
+
+    coef = math.pi / (2 * ampl)
+
+    for i in range(size):
+        result.append(data[i] * coef)
+
+    return result
+
+main_lexem = 'data'
 
 lexem1 = '\Sin_100MHz\sin_100MHz_'
 lexem2 = '\ZeroLine\ZeroLine_'
@@ -420,17 +349,28 @@ printData(data6, len(data6), color6)
 
 plt.show()
 
-data1 = delBlowout(data1, len(data1))
+constants = np.array([data4, data3, data2, data5, data6])
+dc = [-0.5, -0.25, 0.0, 0.25, 0.5]
+data1 = interpolation(data1, dc, constants, len(data1), len(constants))
 
 printData(data1, len(data1), color1)
 plt.show()
-
-#data1 = readFile(main_lexem + lexem1 + "0.txt")
-#data1 = averageElement(data1, len(data1))
 
 data1 = newScale(data1, len(data1))
 
 printData(data1, len(data1), color1)
 plt.show()
 
-partition(data1, len(data1))
+elements = partition(data1, len(data1))
+[ampl, a1, b1, a2, b2] = get_asin_amp(data1, elements)
+
+printData_Lines(data1, a1, b1, a2, b2)
+plt.show()
+
+data1 = scale(data1, len(data1), ampl)
+
+printData(data1, len(data1), 'g')
+plt.show()
+
+printTime(data1, len(data1))
+plt.show()
