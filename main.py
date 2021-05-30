@@ -195,20 +195,43 @@ def printTime(data, size, num):
     plt.scatter(y, x)
     plt.show()
 
-    max = 0
-    min = size
-    delta = []
+    delta1 = []
+    delta2 = []
+    delta3 = []
+    delta4 = []
 
-    for i in range(1, size):
-        if max < y[i] - y[i - 1]:
-            max = y[i] - y[i - 1]
-        if min > y[i] - y[i - 1]:
-            min = y[i] - y[i - 1]
+    for i in range(2, int(size / 2)):
+        if math.fabs(y[i] - y[i - 2]) > num / (2 * math.pi):
+            if i % 2 == 1:
+                delta1.append(math.fabs(y[i] - y[i - 2]))
+            else:
+                delta2.append(math.fabs(y[i] - y[i - 2]))
 
-        if math.fabs(y[i] - y[i - 1]) > num / (4 * math.pi):
-            delta.append(math.fabs(y[i] - y[i - 1]))
+    for i in range(int(size / 2) + 2, size):
+        if math.fabs(y[i] - y[i - 2]) > num / (2 * math.pi):
+            if i % 2 == 1:
+                delta3.append(math.fabs(y[i] - y[i - 2]))
+            else:
+                delta4.append(math.fabs(y[i] - y[i - 2]))
 
-    sns.distplot(delta)
+    plt.subplot(2, 2, 1)
+    plt.title("0 - 511 нечётные")
+    sns.distplot(delta1)
+    plt.xlabel('delta(t[i]) = delta(y[i]) / (2 * pi * teta)')
+    plt.ylabel('количество точек')
+    plt.subplot(2, 2, 2)
+    plt.title("0 - 511 чётные")
+    sns.distplot(delta2)
+    plt.xlabel('delta(t[i]) = delta(y[i]) / (2 * pi * teta)')
+    plt.ylabel('количество точек')
+    plt.subplot(2, 2, 3)
+    plt.title("512 - 1023 нечётные")
+    sns.distplot(delta3)
+    plt.xlabel('delta(t[i]) = delta(y[i]) / (2 * pi * teta)')
+    plt.ylabel('количество точек')
+    plt.subplot(2, 2, 4)
+    plt.title("512 - 1023 чётные")
+    sns.distplot(delta4)
     plt.xlabel('delta(t[i]) = delta(y[i]) / (2 * pi * teta)')
     plt.ylabel('количество точек')
     plt.show()
