@@ -4,6 +4,7 @@ import seaborn as sns
 import math
 from tolsolvty.src.tolsolvty import tolsolvty
 
+
 def readSignal(str):
     data = []
     with open(str, 'r') as inf:
@@ -18,11 +19,13 @@ def readSignal(str):
             data_float_format.append(float(x))
     return data_float_format
 
+
 def getArray(data, num, size):
     result = np.zeros(size)
     for i in range(size):
         result[i] = data[(num - 1) * size + i]
     return result
+
 
 def delBlowout(data, size):
     time_result = data
@@ -36,8 +39,8 @@ def delBlowout(data, size):
                     j -= 1
     return time_result
 
-def readFile(file_name: str):
 
+def readFile(file_name: str):
     array_size = 1024
     stream_size = 10
 
@@ -47,18 +50,19 @@ def readFile(file_name: str):
     num = int(s1)
 
     result = {}
-    for i in range (array_size):
+    for i in range(array_size):
         s1 = file.readline()
         s1 = s1.replace("\n", " ")
         array = {}
         for j in range(stream_size):
             string = s1[: s1.find(" ")]
-            if(j != 0):
+            if (j != 0):
                 array[j - 1] = float(string)
             s1 = s1.replace(str(string) + '    ', "", 1)
         result[(array_size + i - num) % array_size] = array
 
     return result
+
 
 def readLines(string: str):
     num_lines = 100
@@ -72,6 +76,7 @@ def readLines(string: str):
 
     return data
 
+
 def average(arr, size):
     result = 0.
 
@@ -82,24 +87,27 @@ def average(arr, size):
 
     return result
 
+
 def averageElement(data, size):
-    for i in range (size):
+    for i in range(size):
         data[i] = average(data[i], len(data[i]))
 
     return data
 
+
 def averageData(data, size):
-    for i in range (size):
+    for i in range(size):
         data[i] = averageElement(data[i], len(data[i]))
 
     result = np.zeros(len(data[0]))
 
-    for i in range (len(data[0])):
-        for j in range (size):
+    for i in range(len(data[0])):
+        for j in range(size):
             result[i] += data[j][i]
         result[i] /= size
 
     return result
+
 
 def printData(data, size, color: str):
     x = []
@@ -113,6 +121,7 @@ def printData(data, size, color: str):
     plt.ylabel("значение масштабированного сигнала")
     plt.plot(y, x, color)
 
+
 def readSinus(string: str):
     num_lines = 1000
     txt = '.txt'
@@ -124,6 +133,7 @@ def readSinus(string: str):
         data[i] = readFile(s)
 
     return data
+
 
 def newScale(data, size):
     pos_max = 0.
@@ -145,6 +155,7 @@ def newScale(data, size):
 
     return result
 
+
 def getId(val, consts, size):
     if val < consts[0]:
         return 0
@@ -156,8 +167,10 @@ def getId(val, consts, size):
         if val > consts[i] and val < consts[i + 1]:
             return i
 
+
 def getInterpolation(x, y, x_val):
     return y[0] + (x_val - x[0]) / (x[1] - x[0]) * (y[1] - y[0])
+
 
 def interpolation(data, dc, constants, size, num_const):
     result = np.zeros(size)
@@ -168,7 +181,8 @@ def interpolation(data, dc, constants, size, num_const):
 
     return result
 
-def printTime(data, size):
+
+def printTime(data, size, num):
     x = np.zeros(size)
     y = np.zeros(size)
 
@@ -183,77 +197,80 @@ def printTime(data, size):
 
     max = 0
     min = size
-    delta = np.zeros(size - 1)
+    delta = []
 
     for i in range(1, size):
         if max < y[i] - y[i - 1]:
             max = y[i] - y[i - 1]
         if min > y[i] - y[i - 1]:
             min = y[i] - y[i - 1]
-        delta[i - 1] = y[i] - y[i - 1]
+
+        if math.fabs(y[i] - y[i - 1]) > num / (4 * math.pi):
+            delta.append(math.fabs(y[i] - y[i - 1]))
 
     sns.distplot(delta)
-    plt.xlabel('t[i] = (y[i] - y[i - 1]) / (2 * pi * teta)')
+    plt.xlabel('delta(t[i]) = delta(y[i]) / (2 * pi * teta)')
     plt.ylabel('количество точек')
     plt.show()
 
+
 def get_asin_amp(bin_val, ids):
-     dy = 0.005
-     di = 1 / 3
-     A2_bot = np.zeros((len(ids[1]), 3))
-     A2_top = np.zeros((len(ids[1]), 3))
-     B2_bot = np.zeros((len(ids[1]), 1))
-     B2_top = np.zeros((len(ids[1]), 1))
+    dy = 0.005
+    di = 1 / 3
+    A2_bot = np.zeros((len(ids[1]), 3))
+    A2_top = np.zeros((len(ids[1]), 3))
+    B2_bot = np.zeros((len(ids[1]), 1))
+    B2_top = np.zeros((len(ids[1]), 1))
 
-     A1_bot = np.zeros((len(ids[0]), 3))
-     A1_top = np.zeros((len(ids[0]), 3))
-     B1_bot = np.zeros((len(ids[0]), 1))
-     B1_top = np.zeros((len(ids[0]), 1))
+    A1_bot = np.zeros((len(ids[0]), 3))
+    A1_top = np.zeros((len(ids[0]), 3))
+    B1_bot = np.zeros((len(ids[0]), 1))
+    B1_top = np.zeros((len(ids[0]), 1))
 
-     count = 0
+    count = 0
 
-     for i in range(len(ids[0])):
-         if i != 0 and ids[0][i] - ids[0][i - 1] > 2:
+    for i in range(len(ids[0])):
+        if i != 0 and ids[0][i] - ids[0][i - 1] > 2:
             count += 1
 
-         A1_bot[i, 0] = ids[0][i] - di + 1
-         A1_bot[i, 1] = 1
-         A1_bot[i, 2] = count
-         B1_bot[i, 0] = bin_val[ids[0][i]] - dy * abs(bin_val[ids[0][i]])
+        A1_bot[i, 0] = ids[0][i] - di + 1
+        A1_bot[i, 1] = 1
+        A1_bot[i, 2] = count
+        B1_bot[i, 0] = bin_val[ids[0][i]] - dy * abs(bin_val[ids[0][i]])
 
-         A1_top[i, 0] = ids[0][i] + di + 1
-         A1_top[i, 1] = 1
-         A1_top[i, 2] = count
-         B1_top[i, 0] = bin_val[ids[0][i]] + dy * abs(bin_val[ids[0][i]])
+        A1_top[i, 0] = ids[0][i] + di + 1
+        A1_top[i, 1] = 1
+        A1_top[i, 2] = count
+        B1_top[i, 0] = bin_val[ids[0][i]] + dy * abs(bin_val[ids[0][i]])
 
-     count = 0
+    count = 0
 
-     for i in range(len(ids[1])):
-         if i != 0 and ids[1][i] - ids[1][i - 1] > 2:
+    for i in range(len(ids[1])):
+        if i != 0 and ids[1][i] - ids[1][i - 1] > 2:
             count += 1
 
-         A2_bot[i, 0] = ids[1][i] - di
-         A2_bot[i, 1] = 1
-         A2_bot[i, 2] = count
-         B2_bot[i, 0] = bin_val[ids[1][i]] - dy * abs(bin_val[ids[1][i]])
+        A2_bot[i, 0] = ids[1][i] - di
+        A2_bot[i, 1] = 1
+        A2_bot[i, 2] = count
+        B2_bot[i, 0] = bin_val[ids[1][i]] - dy * abs(bin_val[ids[1][i]])
 
-         A2_top[i, 0] = ids[1][i] + di
-         A2_top[i, 1] = 1
-         A2_top[i, 2] = count
-         B2_top[i, 0] = bin_val[ids[1][i]] + dy * abs(bin_val[ids[1][i]])
+        A2_top[i, 0] = ids[1][i] + di
+        A2_top[i, 1] = 1
+        A2_top[i, 2] = count
+        B2_top[i, 0] = bin_val[ids[1][i]] + dy * abs(bin_val[ids[1][i]])
 
-     [tolmax, argmax, envs, ccode] = tolsolvty(A1_bot, A1_top, B1_bot, B1_top)
-     a1 = argmax[0]
-     b1 = argmax[1]
-     [tolmax, argmax, envs, ccode] = tolsolvty(A2_bot, A2_top, B2_bot, B2_top)
-     a2 = argmax[0]
-     b2 = argmax[1]
-     y = abs((b1*a2-b2*a1)/(a2-a1))
+    [tolmax, argmax, envs, ccode] = tolsolvty(A1_bot, A1_top, B1_bot, B1_top)
+    a1 = argmax[0]
+    b1 = argmax[1]
+    [tolmax, argmax, envs, ccode] = tolsolvty(A2_bot, A2_top, B2_bot, B2_top)
+    a2 = argmax[0]
+    b2 = argmax[1]
+    y = abs((b1 * a2 - b2 * a1) / (a2 - a1))
 
-     return [y, a1, b1, a2, b2]
+    return [y, a1, b1, a2, b2]
+
 
 def partition(data, size):
-
     elements = [[], []]
 
     is_pos = True
@@ -272,6 +289,7 @@ def partition(data, size):
             elements[1].append(i)
 
     return elements
+
 
 def printData_Lines(data, a1, b1, a2, b2):
     x = np.zeros(40)
@@ -292,6 +310,7 @@ def printData_Lines(data, a1, b1, a2, b2):
     plt.plot(x[: 40], y1, 'g')
     plt.plot(x[: 40], y2, 'r')
 
+
 def scale(data, size, ampl):
     result = []
 
@@ -301,6 +320,7 @@ def scale(data, size, ampl):
         result.append(data[i] * coef)
 
     return result
+
 
 main_lexem = 'data'
 
@@ -372,5 +392,5 @@ data1 = scale(data1, len(data1), ampl)
 printData(data1, len(data1), 'g')
 plt.show()
 
-printTime(data1, len(data1))
+printTime(data1, len(data1), a1)
 plt.show()
